@@ -1,4 +1,4 @@
-# HomeTrace: the memory your household is missing
+t# HomeTrace: the memory your household is missing
 
 **Amazon Developer Hackathon, Alexa+ track.** A self-hosted MCP server (Streamable HTTP) that gives a
 household a voice-first, searchable memory of maintenance, warranties, repair history and promised follow-ups.
