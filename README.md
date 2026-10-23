@@ -85,8 +85,12 @@ Choose **Streamable HTTP**, enter the URL, click Connect, then List Tools.
 Node.js, Express, Model Context Protocol SDK, Google Gemini API, vanilla HTML/CSS/JS.
 
 ## Project status
-Hackathon prototype with a single household and no authentication. Add authentication and review access
-controls before exposing it to public internet traffic.
+
+HomeTrace is a functional hackathon prototype demonstrating conversational household management through Gemini-powered tool calling and an MCP server using Streamable HTTP.
+
+The current implementation supports a single household, stores records locally in `data.json`, and does not include authentication or multi-user access controls. The Alexa+ experience is demonstrated through a web-based simulator rather than a native Alexa+ device integration.
+
+Before public deployment, authentication, access controls, input validation, and secure data storage should be implemented and tested.
 
 ## License
 MIT, see [LICENSE](LICENSE).
