@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HomeTrace - Alexa+ MCP Simulator</title>
+<style>
+  :root{--bg:#0b1220;--card:#131c2e;--line:#22304a;--txt:#e8eefc;--mut:#8ea0c4;--acc:#00caff;--ok:#2ecc71;--warn:#f5a623;--bad:#ff5d73}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,Segoe UI,sans-serif;background:var(--bg);color:var(--txt);display:grid;grid-template-columns:1fr 380px;height:100vh}
+  main{display:flex;flex-direction:column;border-right:1px solid var(--line);min-width:0}
+  header{padding:14px 20px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:8px}
+  header h1{font-size:18px;margin:0}
+  header h1 span{color:var(--mut);font-size:12px;font-weight:400}
+  header div{display:flex;gap:6px}
+  #log{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:12px}
+  .msg{max-width:78%;padding:10px 14px;border-radius:14px;line-height:1.4;white-space:pre-wrap}
+  .user{align-self:flex-end;background:#1d3b66}
+  .bot{align-self:flex-start;background:var(--card);border:1px solid var(--line)}
+  .tool{align-self:flex-start;font-family:ui-monospace,Consolas,monospace;font-size:12px;color:var(--acc);background:#08202b;border:1px solid #0b3b4d;padding:6px 10px;border-radius:8px;max-width:90%;word-break:break-word}
+  .bar{display:flex;gap:8px;padding:14px;border-top:1px solid var(--line)}
+  input{flex:1;background:var(--card);border:1px solid var(--line);color:var(--txt);padding:12px;border-radius:10px;font-size:15px;outline:none}
+  button{background:var(--acc);color:#001018;border:0;border-radius:10px;padding:0 16px;font-weight:600;cursor:pointer;font-size:15px}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  #mic.on{background:#ff4d6d;color:#fff}
+  .small{padding:6px 10px;font-size:12px;background:var(--card);color:var(--txt);border:1px solid var(--line);font-weight:400;border-radius:8px}
+  .hints{display:flex;gap:6px;flex-wrap:wrap;padding:0 14px 10px}
+  aside{padding:16px;overflow-y:auto}
+  aside h2{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--mut);margin:18px 0 8px}
+  aside h2:first-child{margin-top:0}
+  .item{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-bottom:6px;font-size:14px}
+  .item small{color:var(--mut);display:block;margin-top:2px}
+  .badge{float:right;font-size:11px;padding:2px 8px;border-radius:999px;border:1px solid}
+  .ok{color:var(--ok);border-color:var(--ok)} .warn{color:var(--warn);border-color:var(--warn)} .bad{color:var(--bad);border-color:var(--bad)} .none{color:var(--mut);border-color:var(--line)}
+  .done{text-decoration:line-through;opacity:.5}
+  @media(max-width:800px){body{grid-template-columns:1fr;grid-template-rows:1fr auto}aside{display:none}}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>HomeTrace <span>· Alexa+ simulator · MCP server</span></h1>
+    <div><button class="small" id="seed">Load demo history</button><button class="small" id="reset">Reset</button></div>
+  </header>
+  <div id="log"></div>
+  <div class="hints" id="hints"></div>
+  <div class="bar">
+    <button id="mic" title="Speak">🎤</button>
+    <input id="input" placeholder="Tell HomeTrace what happened, or ask a question" autocomplete="off">
+    <button id="send">Send</button>
+  </div>
+</main>
+<aside>
+  <h2>Appliances</h2><div id="appliances"></div>
+  <h2>Follow-ups</h2><div id="followups"></div>
+  <h2>Service timeline</h2><div id="logs"></div>
+</aside>
+
+<script>
+const sessionId = crypto.randomUUID();
+const log = document.getElementById("log");
+const input = document.getElementById("input");
+const sendBtn = document.getElementById("send");
+const micBtn = document.getElementById("mic");
+
+const HINTS = [
+  "The RO filter was changed today. The technician said to replace it again in six months.",
+  "When was the washing machine last repaired?",
+  "Which warranties expire next month?",
+  "Remind me to follow up with the electrician on Friday",
+  "What's coming up in the next 30 days?"
+];
+
+function el(tag, cls, txt) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (txt != null) e.textContent = txt;
+  return e;
+}
+
+function addMsg(cls, text) {
+  const d = el("div", "msg " + cls, text);
+  log.appendChild(d);
+  log.scrollTop = log.scrollHeight;
+  return d;
+}
+
+function addTool(c) {
+  log.appendChild(el("div", "tool", "🔧 MCP tool: " + c.name + "(" + JSON.stringify(c.args) + ")"));
+}
+
+function speak(text) {
+  if (!("speechSynthesis" in window)) return;
+  speechSynthesis.cancel();
+  speechSynthesis.speak(new SpeechSynthesisUtterance(text));
+}
+
+async function send(text) {
+  text = (text || "").trim();
+  if (!text) return;
+  input.value = "";
+  addMsg("user", text);
+  sendBtn.disabled = true;
+  const thinking = addMsg("bot", "…");
+  try {
+    const r = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: text, sessionId })
+    });
+    const data = await r.json();
+    thinking.remove();
+    if (!r.ok) throw new Error(data.error || "Request failed");
+    (data.toolCalls || []).forEach(addTool);
+    addMsg("bot", data.reply);
+    speak(data.reply);
+    refreshState();
+  } catch (e) {
+    thinking.remove();
+    addMsg("bot", "Sorry, something went wrong: " + e.message);
+  } finally {
+    sendBtn.disabled = false;
+    input.focus();
+  }
+}
+
+function todayMid() { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+function daysUntil(s) { const [y, m, d] = s.split("-").map(Number); return Math.round((new Date(y, m - 1, d) - todayMid()) / 864e5); }
+function rel(n) { return n < 0 ? (-n) + "d overdue" : n === 0 ? "today" : "in " + n + "d"; }
+
+function fill(id, nodes, empty) {
+  const box = document.getElementById(id);
+  box.replaceChildren();
+  if (!nodes.length) box.appendChild(el("div", "item", empty)).style.color = "var(--mut)";
+  nodes.forEach(n => box.appendChild(n));
+}
+
+async function refreshState() {
+  const s = await (await fetch("/api/state")).json();
+
+  fill("appliances", s.appliances.map(a => {
+    const d = el("div", "item", a.name + (a.brand ? " · " + a.brand : ""));
+    let cls = "none", label = "no warranty info";
+    if (a.warrantyExpires) {
+      const n = daysUntil(a.warrantyExpires);
+      if (n < 0) { cls = "bad"; label = "expired"; }
+      else if (n <= 45) { cls = "warn"; label = "expires " + rel(n); }
+      else { cls = "ok"; label = "under warranty"; }
+    }
+    d.appendChild(el("span", "badge " + cls, label));
+    d.appendChild(el("small", null, a.nextServiceDue ? "Next service: " + a.nextServiceDue + " (" + rel(daysUntil(a.nextServiceDue)) + ")" : "No service scheduled"));
+    return d;
+  }), "No appliances yet");
+
+  fill("followups", s.followups.map(f => {
+    const d = el("div", "item" + (f.done ? " done" : ""), f.task);
+    d.appendChild(el("small", null, (f.contact ? f.contact + " · " : "") + "due " + f.due + (f.done ? "" : " (" + rel(daysUntil(f.due)) + ")")));
+    return d;
+  }), "No follow-ups");
+
+  fill("logs", s.logs.slice(0, 10).map(l => {
+    const d = el("div", "item", l.appliance + ": " + l.action);
+    d.appendChild(el("small", null, l.date + " · " + l.type + (l.technician ? " · " + l.technician : "") + (l.cost != null ? " · Rs " + l.cost : "")));
+    if (l.notes) d.appendChild(el("small", null, l.notes));
+    return d;
+  }), "No history yet");
+}
+
+// voice input
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+if (SR) {
+  const rec = new SR();
+  rec.lang = "en-US";
+  rec.interimResults = false;
+  rec.onresult = e => send(e.results[0][0].transcript);
+  rec.onend = () => micBtn.classList.remove("on");
+  rec.onerror = () => micBtn.classList.remove("on");
+  micBtn.onclick = () => { speechSynthesis.cancel(); micBtn.classList.add("on"); rec.start(); };
+} else {
+  micBtn.disabled = true;
+  micBtn.title = "Voice input needs Chrome or Edge";
+}
+
+HINTS.forEach(h => {
+  const b = el("button", "small", h);
+  b.onclick = () => send(h);
+  document.getElementById("hints").appendChild(b);
+});
+
+function greet() { addMsg("bot", "Hi! I'm Alexa+ with HomeTrace. Tell me about any repair, service or warranty and I'll remember it."); }
+
+sendBtn.onclick = () => send(input.value);
+input.addEventListener("keydown", e => { if (e.key === "Enter") send(input.value); });
+document.getElementById("seed").onclick = async () => { await fetch("/api/seed", { method: "POST" }); log.replaceChildren(); greet(); refreshState(); };
+document.getElementById("reset").onclick = async () => { await fetch("/api/reset", { method: "POST" }); log.replaceChildren(); greet(); refreshState(); };
+
+greet();
+refreshState();
+</script>
+</body>
+</html>

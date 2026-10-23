@@ -1,0 +1,101 @@
+{
+  "appliances": [
+    {
+      "id": 1,
+      "name": "Washing machine",
+      "brand": "LG",
+      "purchaseDate": "2024-11-20",
+      "warrantyExpires": "2026-11-13",
+      "nextServiceDue": null
+    },
+    {
+      "id": 2,
+      "name": "RO water purifier",
+      "brand": "Kent",
+      "purchaseDate": "2025-12-20",
+      "warrantyExpires": "2026-12-20",
+      "nextServiceDue": "2026-11-20"
+    },
+    {
+      "id": 3,
+      "name": "Air conditioner",
+      "brand": "Daikin",
+      "purchaseDate": "2024-04-20",
+      "warrantyExpires": "2026-04-20",
+      "nextServiceDue": "2027-02-20"
+    },
+    {
+      "id": 4,
+      "name": "Geyser",
+      "brand": "Racold",
+      "purchaseDate": "2025-11-20",
+      "warrantyExpires": "2026-11-20",
+      "nextServiceDue": null
+    }
+  ],
+  "logs": [
+    {
+      "id": 5,
+      "applianceId": 1,
+      "appliance": "Washing machine",
+      "type": "repair",
+      "action": "drain pump replaced",
+      "date": "2026-06-20",
+      "technician": "Ramesh (LG service)",
+      "cost": 1800,
+      "notes": "Technician said the drum bearing may wear out within a year"
+    },
+    {
+      "id": 6,
+      "applianceId": 2,
+      "appliance": "RO water purifier",
+      "type": "replacement",
+      "action": "filter changed",
+      "date": "2026-05-20",
+      "technician": "Sunil (Kent)",
+      "cost": 1200,
+      "notes": "Replace the filter again in six months"
+    },
+    {
+      "id": 7,
+      "applianceId": 3,
+      "appliance": "Air conditioner",
+      "type": "service",
+      "action": "annual gas check and deep clean",
+      "date": "2026-02-20",
+      "technician": "CoolCare Services",
+      "cost": 900,
+      "notes": null
+    },
+    {
+      "id": 8,
+      "applianceId": 4,
+      "appliance": "Geyser",
+      "type": "repair",
+      "action": "thermostat replaced",
+      "date": "2026-08-20",
+      "technician": "Mehta Electricals",
+      "cost": 650,
+      "notes": "Wiring near the geyser looked old; electrician suggested a follow-up"
+    }
+  ],
+  "followups": [
+    {
+      "id": 9,
+      "task": "Call the electrician about the geyser wiring",
+      "due": "2026-10-23",
+      "contact": "Mehta Electricals",
+      "appliance": "Geyser",
+      "done": false
+    },
+    {
+      "id": 10,
+      "task": "Follow up with electrician",
+      "due": "2026-10-23",
+      "contact": "electrician",
+      "appliance": null,
+      "done": false
+    }
+  ],
+  "nextId": 11
+}
