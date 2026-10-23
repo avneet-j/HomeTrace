@@ -37,20 +37,29 @@ Data persists in `data.json`, so records survive restarts.
 ## Quick start
 **Requirements:** Node.js 20+ and a free Gemini API key from Google AI Studio.
 
-bash
+
+```bash
 git clone https://github.com/avneet-j/HomeTrace.git
 cd HomeTrace
 npm install
+```
+
+
 
 
 Create a `.env` file in the project root:
+
+```env
 GEMINI_API_KEY=your_gemini_api_key
 GEMINI_MODEL=gemini-2.5-flash
 PORT=3000
+```
 
 Then run:
-bash
+
+```bash
 npm start
+```
 
 
 1. Open http://localhost:3000 in Chrome or Edge (voice input needs one of them).
@@ -60,10 +69,17 @@ npm start
 Never commit your real `.env` file.
 
 ## Use the MCP server directly
-The endpoint is `http://localhost:3000/mcp` (Streamable HTTP, stateless). To inspect it:
-bash
+
+The endpoint is `http://localhost:3000/mcp` (Streamable HTTP, stateless).
+
+To inspect it, run:
+
+```bash
 npx @modelcontextprotocol/inspector
+```
+
 Choose **Streamable HTTP**, enter the URL, click Connect, then List Tools.
+
 
 ## Built with
 Node.js, Express, Model Context Protocol SDK, Google Gemini API, vanilla HTML/CSS/JS.
